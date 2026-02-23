@@ -33,7 +33,7 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Noto+Sans+JP:wght@400;700&display=swap"
         rel="stylesheet">
     <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@0.321.0"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -72,6 +72,15 @@
         ::-webkit-scrollbar-thumb {
             background: #d63e5c;
             border-radius: 10px;
+        }
+
+        /* Ensure stars have fixed size for clickability */
+        .star-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
@@ -367,8 +376,12 @@
     <script src="js/components.js"></script>
     <script src="js/app.js"></script>
     <script>
-        // Initialize Icons
-        lucide.createIcons();
+        // Initial Icons render
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
     </script>
 </body>
 

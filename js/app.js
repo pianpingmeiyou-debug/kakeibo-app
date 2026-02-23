@@ -77,6 +77,10 @@ const App = {
         // Goal Setting
         document.getElementById('save-goals-btn').addEventListener('click', () => this.handleSaveGoals());
 
+        // Calendar Month Control
+        document.getElementById('cal-prev-month').addEventListener('click', () => this.changeMonth(-1));
+        document.getElementById('cal-next-month').addEventListener('click', () => this.changeMonth(1));
+
         // Category Management in Settings
         document.getElementById('add-expense-cat-btn').addEventListener('click', () => this.handleAddCategory('expense'));
         document.getElementById('add-income-cat-btn').addEventListener('click', () => this.handleAddCategory('income'));
@@ -213,6 +217,7 @@ const App = {
     renderCalendar() {
         const year = this.currentDate.getFullYear();
         const month = this.currentDate.getMonth();
+        document.getElementById('cal-month-label').innerText = `${year}年${month + 1}月`;
         const entries = Storage.getEntries();
         const calendarBody = document.getElementById('calendar-body');
         calendarBody.innerHTML = Components.renderCalendar(year, month, entries);

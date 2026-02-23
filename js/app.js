@@ -153,7 +153,7 @@ const App = {
 
         if (recentEntries.length > 0) {
             recentList.innerHTML = recentEntries.map(e => Components.renderTransaction(e)).join('');
-            lucide.createIcons();
+            this.refreshIcons();
         } else {
             recentList.innerHTML = '<p class="text-center py-10 text-gray-400 text-sm italic">まだデータがないよ 🕊️</p>';
         }
@@ -227,7 +227,13 @@ const App = {
         // Render categories
         document.getElementById('expense-cat-list').innerHTML = Components.renderSettingsCategoryList('expense');
         document.getElementById('income-cat-list').innerHTML = Components.renderSettingsCategoryList('income');
-        lucide.createIcons();
+        this.refreshIcons();
+    },
+
+    refreshIcons() {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
     },
 
     handleAddCategory(type) {
@@ -246,6 +252,7 @@ const App = {
 
         input.value = '';
         this.renderSettings();
+        // Force refresh the entry form category list as well
         this.updateCategoryLists();
     },
 

@@ -260,9 +260,21 @@
             </div>
         </div>
 
-        <!-- Settings / Calendar View -->
+        <!-- Calendar View -->
         <div id="calendar-view" class="view hidden space-y-6">
             <h2 class="text-xl font-bold">カレンダー 📅</h2>
+
+            <!-- Month Selector -->
+            <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-soft">
+                <button id="cal-prev-month" class="p-2 hover:bg-gray-50 rounded-full">
+                    <i data-lucide="chevron-left"></i>
+                </button>
+                <span id="cal-month-label" class="font-bold">2026年2月</span>
+                <button id="cal-next-month" class="p-2 hover:bg-gray-50 rounded-full">
+                    <i data-lucide="chevron-right"></i>
+                </button>
+            </div>
+
             <div class="bg-white p-4 rounded-3xl shadow-soft overflow-hidden">
                 <!-- Simple Calendar implementation will go here -->
                 <div id="calendar-body" class="grid grid-cols-7 gap-1">

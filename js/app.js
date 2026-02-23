@@ -302,7 +302,7 @@ const App = {
             expenseTargetMax: Number(max)
         });
 
-        alert('目標をほぞんしたよ ✨');
+        alert('目標を保存したよ ✨');
     },
 
     changeMonth(delta) {
@@ -334,3 +334,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // Default date to today
     document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
 });
+

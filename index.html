@@ -276,13 +276,13 @@
 
         <!-- Saving View -->
         <div id="saving-view" class="view hidden space-y-6">
-            <h2 class="text-xl font-bold">貯金 💰</h2>
+            <h2 class="text-xl font-bold">貯金</h2>
 
             <div id="saving-setup-form" class="bg-white p-6 rounded-3xl shadow-soft space-y-4 hidden">
                 <h3 class="font-bold text-sm">貯金目標の設定</h3>
                 <div class="space-y-3">
                     <div>
-                        <label class="text-xs text-gray-400">月額収入</label>
+                        <label class="text-xs text-gray-400">月額収入(平均)</label>
                         <input type="number" id="saving-monthly-income" placeholder="200000"
                             class="w-full bg-gray-50 border-none rounded-xl p-3">
                     </div>
@@ -343,7 +343,7 @@
 
         <!-- Goals View -->
         <div id="calendar-view" class="view hidden space-y-6">
-            <h2 class="text-xl font-bold">カレンダー 📅</h2>
+            <h2 class="text-xl font-bold">カレンダー</h2>
 
             <!-- Month Selector -->
             <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-soft">
@@ -374,12 +374,7 @@
                     </div>
                     <div class="flex gap-2">
                         <div class="flex-1">
-                            <label class="text-xs text-gray-400">支出目標(最小)</label>
-                            <input type="number" id="goal-expense-min" placeholder="0" step="1000"
-                                class="w-full bg-gray-50 border-none rounded-xl p-3 focus:ring-1 focus:ring-ribbon-pink">
-                        </div>
-                        <div class="flex-1">
-                            <label class="text-xs text-gray-400">支出目標(最大)</label>
+                            <label class="text-xs text-gray-400">支出目標</label>
                             <input type="number" id="goal-expense-max" placeholder="150000" step="1000"
                                 class="w-full bg-gray-50 border-none rounded-xl p-3 focus:ring-1 focus:ring-ribbon-pink">
                         </div>

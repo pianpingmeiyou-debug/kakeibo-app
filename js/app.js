@@ -38,10 +38,15 @@ const App = {
 
                 const type = btn.dataset.type;
                 const necessityContainer = document.getElementById('necessity-container');
+                const paymentSelect = document.getElementById('input-payment');
                 if (type === 'income') {
                     necessityContainer.classList.add('opacity-30', 'pointer-events-none');
+                    paymentSelect.disabled = true;
+                    paymentSelect.parentElement.classList.add('opacity-30');
                 } else {
                     necessityContainer.classList.remove('opacity-30', 'pointer-events-none');
+                    paymentSelect.disabled = false;
+                    paymentSelect.parentElement.classList.remove('opacity-30');
                 }
                 // Refresh categories for this type
                 this.updateCategoryLists(type);
@@ -303,7 +308,6 @@ const App = {
     renderSettings() {
         const goals = Storage.getGoals();
         document.getElementById('goal-income').value = goals.incomeTarget;
-        document.getElementById('goal-expense-min').value = goals.expenseTargetMin;
         document.getElementById('goal-expense-max').value = goals.expenseTargetMax;
 
         // Render categories & payments
@@ -387,12 +391,11 @@ const App = {
 
     handleSaveGoals() {
         const income = document.getElementById('goal-income').value;
-        const min = document.getElementById('goal-expense-min').value;
         const max = document.getElementById('goal-expense-max').value;
 
         Storage.saveGoals({
             incomeTarget: Number(income),
-            expenseTargetMin: Number(min),
+            expenseTargetMin: 0,
             expenseTargetMax: Number(max)
         });
 

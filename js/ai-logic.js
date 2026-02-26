@@ -49,8 +49,8 @@ const AILogic = {
 
         if (totalExpense > goals.expenseTargetMax) {
             advice += `\n目標のししゅつ額を少し超えてしまったみたい。来月はもう少し「がまん」も必要かもしれないけど、無理はしないでね(>_<)`;
-        } else if (totalExpense <= goals.expenseTargetMax && totalExpense >= goals.expenseTargetMin) {
-            advice += `\n目標のししゅつ額にぴったり収まってるね！素晴らしいコントロールです🌸`;
+        } else if (totalExpense > goals.expenseTargetMax * 0.8) {
+            advice += `\n目標のししゅつ額に近いけど、しっかり範囲内に収まってるね！素晴らしいコントロールです🌸`;
         } else {
             advice += `\n目標よりもずっと節約できていて、とっても優秀だよ！自分へのご褒美も忘れないでね(^▽^)/`;
         }
@@ -83,52 +83,68 @@ const AILogic = {
         const entries = Storage.getEntries();
         const savingGoals = Storage.getSavingGoals();
 
+        let baseMessage = "記録をきちんとつけるほど、分析度がアップするよ 🌸\n\n";
+
         if (!savingGoals || savingGoals.targetAmount <= 0) {
-            return "貯金目標を設定すると、AIが達成までの道のりをアドバイスするよ 🌸";
+            return baseMessage + "貯金目標を設定すると、AIが達成までの道のりをアドバイスするよ 🌸";
         }
 
         const totalIncomeAcrossTime = entries.filter(e => e.type === 'income').reduce((sum, e) => sum + Number(e.amount), 0);
         const totalExpenseAcrossTime = entries.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.amount), 0);
         const currentSavings = totalIncomeAcrossTime - totalExpenseAcrossTime;
 
+        let advice = "";
+        const entryCount = entries.length;
+
         if (currentSavings >= savingGoals.targetAmount) {
-            return "おめでとう！目標の貯金額を達成しているよ！本当にすごいね ✨";
-        }
+            advice = "おめでとう！目標の貯金額を達成しているよ！本当にすごいね ✨";
+        } else {
+            // Entry count based accuracy improvement
+            if (entryCount < 5) {
+                advice = "まだ記録が少ないから、これからもっと詳しく分析できるようになるよ。まずは毎日の記録を楽しもう！ 😊";
+            } else if (entryCount < 20) {
+                advice = "記録が溜まってきたね！少しずつあなたの傾向が見えてきたよ。この調子で続けていこう ✨";
+            } else {
+                advice = "たくさんの記録ありがとう！分析の精度が最高レベルだよ 💎 ";
+            }
 
-        // Monthly average (last 3 months or all if less)
-        const now = new Date();
-        const monthlyBalances = {};
-        entries.forEach(e => {
-            const d = new Date(e.date);
-            const m = `${d.getFullYear()}-${d.getMonth()}`;
-            if (!monthlyBalances[m]) monthlyBalances[m] = { inc: 0, exp: 0 };
-            if (e.type === 'income') monthlyBalances[m].inc += Number(e.amount);
-            else monthlyBalances[m].exp += Number(e.amount);
-        });
+            // Monthly average (last 3 months or all if less)
+            const now = new Date();
+            const monthlyBalances = {};
+            entries.forEach(e => {
+                const d = new Date(e.date);
+                const m = `${d.getFullYear()}-${d.getMonth()}`;
+                if (!monthlyBalances[m]) monthlyBalances[m] = { inc: 0, exp: 0 };
+                if (e.type === 'income') monthlyBalances[m].inc += Number(e.amount);
+                else monthlyBalances[m].exp += Number(e.amount);
+            });
 
-        const balances = Object.values(monthlyBalances).map(b => b.inc - b.exp);
-        const avgSaving = balances.length > 0 ? balances.reduce((a, b) => a + b, 0) / balances.length : 0;
+            const balances = Object.values(monthlyBalances).map(b => b.inc - b.exp);
+            const avgSaving = balances.length > 0 ? balances.reduce((a, b) => a + b, 0) / balances.length : 0;
 
-        if (savingGoals.targetDate) {
-            const [tYear, tMonth] = savingGoals.targetDate.split('-').map(Number);
-            const targetDateObj = new Date(tYear, tMonth - 1, 1);
-            const diffMonths = (targetDateObj.getFullYear() - now.getFullYear()) * 12 + (targetDateObj.getMonth() - now.getMonth());
+            if (savingGoals.targetDate) {
+                const [tYear, tMonth] = savingGoals.targetDate.split('-').map(Number);
+                const targetDateObj = new Date(tYear, tMonth - 1, 1);
+                const diffMonths = (targetDateObj.getFullYear() - now.getFullYear()) * 12 + (targetDateObj.getMonth() - now.getMonth());
 
-            if (diffMonths > 0) {
-                const remain = savingGoals.targetAmount - currentSavings;
-                const neededPerMonth = remain / diffMonths;
-                const maxExpense = savingGoals.monthlyIncome - neededPerMonth;
+                if (diffMonths > 0) {
+                    const remain = savingGoals.targetAmount - currentSavings;
+                    const neededPerMonth = remain / diffMonths;
+                    const maxExpense = savingGoals.monthlyIncome - neededPerMonth;
 
-                return `${savingGoals.targetDate}までに目標を達成するには、月々の支出を ${Math.max(0, Math.round(maxExpense)).toLocaleString()}円以内に抑えると良さそうだよ😊`;
+                    advice += `\n\n${savingGoals.targetDate}までに目標を達成するには、月々の支出を ${Math.max(0, Math.round(maxExpense)).toLocaleString()}円以内に抑えると良さそうだよ😊`;
+                }
+            }
+
+            if (avgSaving > 0) {
+                const monthsToGoal = (savingGoals.targetAmount - currentSavings) / avgSaving;
+                advice += `\n\nこのペースだと、あと **${Math.ceil(monthsToGoal)}か月** で目標の金額に届きそうだね。未来が明るくなりそう！ ✨`;
+            } else if (entryCount >= 5) {
+                advice += "\n\n今は「回復フェーズ」だね。少しずつ収支を整えていけば、きっと目標に近づけるよ。応援してるね ♡";
             }
         }
 
-        if (avgSaving > 0) {
-            const monthsToGoal = (savingGoals.targetAmount - currentSavings) / avgSaving;
-            return `このペースだと、あと **${Math.ceil(monthsToGoal)}か月** で目標の金額に届きそうだね。未来が明るくなりそう！ ✨`;
-        } else {
-            return "今は「回復フェーズ」だね。少しずつ収支を整えていけば、きっと目標に近づけるよ。応援してるね ♡";
-        }
+        return baseMessage + advice;
     },
 
     getMiniComment(totalExpense, goals) {

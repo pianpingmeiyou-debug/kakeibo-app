@@ -12,6 +12,7 @@ const App = {
         this.setupEventListeners();
         this.render();
         this.updateCategoryLists();
+        this.updatePaymentLists();
     },
 
     setupEventListeners() {
@@ -77,20 +78,31 @@ const App = {
         // Goal Setting
         document.getElementById('save-goals-btn').addEventListener('click', () => this.handleSaveGoals());
 
+        // Saving Goals
+        document.getElementById('save-saving-goals-btn').addEventListener('click', () => this.handleSaveSavingGoals());
+        document.getElementById('edit-saving-btn').addEventListener('click', () => {
+            document.getElementById('saving-setup-form').classList.remove('hidden');
+            document.getElementById('saving-stats').classList.add('hidden');
+        });
+
         // Calendar Month Control
         document.getElementById('cal-prev-month').addEventListener('click', () => this.changeMonth(-1));
         document.getElementById('cal-next-month').addEventListener('click', () => this.changeMonth(1));
 
-        // Category Management in Settings
+        // Category & Payment Management in Settings
         document.getElementById('add-expense-cat-btn').addEventListener('click', () => this.handleAddCategory('expense'));
         document.getElementById('add-income-cat-btn').addEventListener('click', () => this.handleAddCategory('income'));
+        document.getElementById('add-payment-method-btn').addEventListener('click', () => this.handleAddPaymentMethod());
 
-        // Delete Category Delegation
+        // Delete Delegation
         document.getElementById('settings-view').addEventListener('click', (e) => {
-            const deleteBtn = e.target.closest('.delete-cat-btn');
-            if (deleteBtn) {
-                const id = deleteBtn.dataset.id;
-                this.handleDeleteCategory(id);
+            const deleteCatBtn = e.target.closest('.delete-cat-btn');
+            if (deleteCatBtn) {
+                this.handleDeleteCategory(deleteCatBtn.dataset.id);
+            }
+            const deletePayBtn = e.target.closest('.delete-pay-btn');
+            if (deletePayBtn) {
+                this.handleDeletePaymentMethod(deletePayBtn.dataset.id);
             }
         });
     },
@@ -121,6 +133,8 @@ const App = {
             this.renderStats();
         } else if (this.currentView === 'calendar') {
             this.renderCalendar();
+        } else if (this.currentView === 'saving') {
+            this.renderSaving();
         } else if (this.currentView === 'settings') {
             this.renderSettings();
         }
@@ -168,50 +182,70 @@ const App = {
         const month = this.currentDate.getMonth();
         document.getElementById('stats-month-label').innerText = `${year}年${month + 1}月`;
 
-        const entries = Storage.getEntries().filter(e => {
+        const monthEntries = Storage.getEntries().filter(e => {
             const d = new Date(e.date);
             return d.getFullYear() === year && d.getMonth() === month && e.type === 'expense';
         });
 
-        // Prepare chart data
+        // 1. Category Chart
         const categoryData = {};
         const categories = Storage.getCategories();
-        entries.forEach(e => {
+        monthEntries.forEach(e => {
             categoryData[e.category] = (categoryData[e.category] || 0) + Number(e.amount);
         });
 
-        const labels = Object.keys(categoryData);
-        const data = Object.values(categoryData);
-        const colors = labels.map(label => {
+        const catLabels = Object.keys(categoryData);
+        const catValues = Object.values(categoryData);
+        const catColors = catLabels.map(label => {
             const cat = categories.find(c => c.name === label);
             return cat ? cat.color : '#cbd5e1';
         });
 
-        const ctx = document.getElementById('chart-canvas').getContext('2d');
+        const ctxCat = document.getElementById('chart-canvas').getContext('2d');
         if (this.chart) this.chart.destroy();
-
-        if (labels.length > 0) {
-            this.chart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: colors,
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { usePointStyle: true, font: { size: 10 } } }
-                    },
-                    cutout: '70%'
-                }
-            });
+        if (catLabels.length > 0) {
+            this.chart = new Chart(ctxCat, this.getChartConfig(catLabels, catValues, catColors));
         }
+
+        // 2. Payment Method Chart
+        const paymentData = {};
+        monthEntries.forEach(e => {
+            const method = e.paymentMethod || '未選択';
+            paymentData[method] = (paymentData[method] || 0) + Number(e.amount);
+        });
+
+        const payLabels = Object.keys(paymentData);
+        const payValues = Object.values(paymentData);
+        const payColors = payLabels.map((_, i) => this.COLOR_PALETTE[i % this.COLOR_PALETTE.length]);
+
+        const ctxPay = document.getElementById('payment-chart-canvas').getContext('2d');
+        if (this.paymentChart) this.paymentChart.destroy();
+        if (payLabels.length > 0) {
+            this.paymentChart = new Chart(ctxPay, this.getChartConfig(payLabels, payValues, payColors));
+        }
+    },
+
+    getChartConfig(labels, data, colors) {
+        return {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors,
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, font: { size: 10 } } }
+                },
+                cutout: '70%'
+            }
+        };
     },
 
     renderCalendar() {
@@ -223,15 +257,59 @@ const App = {
         calendarBody.innerHTML = Components.renderCalendar(year, month, entries);
     },
 
+    renderSaving() {
+        const goals = Storage.getSavingGoals();
+        const entries = Storage.getEntries();
+        const setupForm = document.getElementById('saving-setup-form');
+        const statsArea = document.getElementById('saving-stats');
+
+        if (!goals || goals.targetAmount <= 0) {
+            setupForm.classList.remove('hidden');
+            statsArea.classList.add('hidden');
+            return;
+        }
+
+        setupForm.classList.add('hidden');
+        statsArea.classList.remove('hidden');
+
+        // Calculate stats
+        const now = new Date();
+        const totalIncome = entries.filter(e => e.type === 'income').reduce((sum, e) => sum + Number(e.amount), 0);
+        const totalExpense = entries.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.amount), 0);
+        const currentSavings = totalIncome - totalExpense;
+
+        const monthEntries = entries.filter(e => {
+            const d = new Date(e.date);
+            return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+        });
+        const monthlySavings = monthEntries.filter(e => e.type === 'income').reduce((sum, e) => sum + Number(e.amount), 0) -
+            monthEntries.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.amount), 0);
+
+        // UI Update
+        document.getElementById('saving-total-amount').innerText = `¥${Math.max(0, currentSavings).toLocaleString()}`;
+        document.getElementById('saving-monthly-amount').innerText = `¥${monthlySavings.toLocaleString()}`;
+
+        const remain = Math.max(0, goals.targetAmount - currentSavings);
+        const percent = Math.min(100, (currentSavings / goals.targetAmount) * 100);
+        document.getElementById('saving-progress-text').innerText = `達成率 ${Math.round(percent)}%`;
+        document.getElementById('saving-remain-text').innerText = `あと ¥${remain.toLocaleString()}`;
+        document.getElementById('saving-progress-bar').style.width = `${percent}%`;
+
+        // AI Comment
+        document.getElementById('ai-saving-comment').innerText = AILogic.analyzeSavings();
+        this.refreshIcons();
+    },
+
     renderSettings() {
         const goals = Storage.getGoals();
         document.getElementById('goal-income').value = goals.incomeTarget;
         document.getElementById('goal-expense-min').value = goals.expenseTargetMin;
         document.getElementById('goal-expense-max').value = goals.expenseTargetMax;
 
-        // Render categories
+        // Render categories & payments
         document.getElementById('expense-cat-list').innerHTML = Components.renderSettingsCategoryList('expense');
         document.getElementById('income-cat-list').innerHTML = Components.renderSettingsCategoryList('income');
+        document.getElementById('payment-method-list').innerHTML = Components.renderSettingsPaymentMethodList();
         this.refreshIcons();
     },
 
@@ -245,7 +323,6 @@ const App = {
         const inputId = type === 'expense' ? 'add-expense-cat-input' : 'add-income-cat-input';
         const input = document.getElementById(inputId);
         const name = input.value.trim();
-
         if (!name) return;
 
         Storage.addCategory({
@@ -257,7 +334,6 @@ const App = {
 
         input.value = '';
         this.renderSettings();
-        // Force refresh the entry form category list as well
         this.updateCategoryLists();
     },
 
@@ -267,10 +343,28 @@ const App = {
         this.updateCategoryLists();
     },
 
+    handleAddPaymentMethod() {
+        const input = document.getElementById('add-payment-method-input');
+        const name = input.value.trim();
+        if (!name) return;
+
+        Storage.addPaymentMethod(name);
+        input.value = '';
+        this.renderSettings();
+        this.updatePaymentLists();
+    },
+
+    handleDeletePaymentMethod(id) {
+        Storage.deletePaymentMethod(id);
+        this.renderSettings();
+        this.updatePaymentLists();
+    },
+
     handleSave() {
         const type = document.querySelector('.type-toggle-btn.bg-white').dataset.type;
         const date = document.getElementById('input-date').value || new Date().toISOString().split('T')[0];
         const category = document.getElementById('input-category').value;
+        const paymentMethod = document.getElementById('input-payment').value;
         const amount = document.getElementById('input-amount').value;
         const item = document.getElementById('input-item').value;
         const necessity = type === 'expense' ? this.selectedStars * 20 : 100;
@@ -280,7 +374,7 @@ const App = {
             return;
         }
 
-        Storage.saveEntry({ date, type, category, amount, item, necessity });
+        Storage.saveEntry({ date, type, category, paymentMethod, amount, item, necessity });
 
         // Reset form
         document.getElementById('input-amount').value = '';
@@ -302,7 +396,26 @@ const App = {
             expenseTargetMax: Number(max)
         });
 
-        alert('目標を保存したよ ✨');
+        alert('目標をほぞんしたよ ✨');
+    },
+
+    handleSaveSavingGoals() {
+        const income = document.getElementById('saving-monthly-income').value;
+        const target = document.getElementById('saving-target-amount').value;
+        const date = document.getElementById('saving-target-date').value;
+
+        if (!income || !target) {
+            alert('月収と目標額を入力してね！');
+            return;
+        }
+
+        Storage.saveSavingGoals({
+            monthlyIncome: Number(income),
+            targetAmount: Number(target),
+            targetDate: date
+        });
+
+        this.renderSaving();
     },
 
     changeMonth(delta) {
@@ -318,13 +431,19 @@ const App = {
     },
 
     updateCategoryLists(type = null) {
-        // If type is not provided, use the current active type in entry form
         if (!type) {
             const activeBtn = document.querySelector('.type-toggle-btn.bg-white');
             type = activeBtn ? activeBtn.dataset.type : 'expense';
         }
         const select = document.getElementById('input-category');
         select.innerHTML = Components.renderCategoryOptions(type);
+    },
+
+    updatePaymentLists() {
+        const select = document.getElementById('input-payment');
+        if (select) {
+            select.innerHTML = Components.renderPaymentMethodOptions();
+        }
     }
 };
 
@@ -334,4 +453,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // Default date to today
     document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
 });
-

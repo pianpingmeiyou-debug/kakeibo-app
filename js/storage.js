@@ -2,7 +2,9 @@ const Storage = {
     KEYS: {
         ENTRIES: 'ribbon_entries',
         CATEGORIES: 'ribbon_categories',
-        GOALS: 'ribbon_goals'
+        GOALS: 'ribbon_goals',
+        PAYMENT_METHODS: 'ribbon_payment_methods',
+        SAVING_GOALS: 'ribbon_saving_goals'
     },
 
     // Initial default categories
@@ -18,6 +20,13 @@ const Storage = {
         { id: 'inc2', name: 'お小遣い', color: '#FFB7C5', icon: 'gift', type: 'income' },
         { id: 'inc3', name: 'メルカリ', color: '#FDFD96', icon: 'package', type: 'income' },
         { id: 'inc4', name: 'その他', color: '#D4F1F4', icon: 'more-horizontal', type: 'income' }
+    ],
+
+    DEFAULT_PAYMENT_METHODS: [
+        { id: 'pay1', name: '現金' },
+        { id: 'pay2', name: 'クレジット' },
+        { id: 'pay3', name: 'QR決済' },
+        { id: 'pay4', name: '電子マネー' }
     ],
 
     init() {
@@ -50,8 +59,6 @@ const Storage = {
             const palette = ['#FFB7C5', '#B5EAD7', '#FDFD96', '#E0BBE4', '#FFD1DC', '#D4F1F4', '#C7CEEA', '#FFDAC1', '#BFFCC6', '#FFFFD1', '#97C1A9', '#85E3FF'];
             const usedColors = new Set();
             cats.forEach((c, idx) => {
-                // If color is missing, or already used (for non-default ones primarily), or just the same default pink/blue
-                // We'll be conservative: if it's a user category or the same color is repeated, reassign.
                 if (!c.color || usedColors.has(c.color)) {
                     c.color = palette[idx % palette.length];
                     updated = true;
@@ -69,6 +76,19 @@ const Storage = {
                 incomeTarget: 200000,
                 expenseTargetMin: 100000,
                 expenseTargetMax: 150000
+            }));
+        }
+
+        if (!localStorage.getItem(this.KEYS.PAYMENT_METHODS)) {
+            localStorage.setItem(this.KEYS.PAYMENT_METHODS, JSON.stringify(this.DEFAULT_PAYMENT_METHODS));
+        }
+
+        if (!localStorage.getItem(this.KEYS.SAVING_GOALS)) {
+            localStorage.setItem(this.KEYS.SAVING_GOALS, JSON.stringify({
+                monthlyIncome: 0,
+                monthlyAvgExpense: 0,
+                targetAmount: 0,
+                targetDate: '' // 'YYYY-MM'
             }));
         }
     },
@@ -111,6 +131,23 @@ const Storage = {
         localStorage.setItem(this.KEYS.CATEGORIES, JSON.stringify(cats));
     },
 
+    // Payment Methods
+    getPaymentMethods() {
+        return JSON.parse(localStorage.getItem(this.KEYS.PAYMENT_METHODS) || JSON.stringify(this.DEFAULT_PAYMENT_METHODS));
+    },
+
+    addPaymentMethod(name) {
+        const methods = this.getPaymentMethods();
+        methods.push({ id: 'pay_' + Date.now(), name });
+        localStorage.setItem(this.KEYS.PAYMENT_METHODS, JSON.stringify(methods));
+    },
+
+    deletePaymentMethod(id) {
+        let methods = this.getPaymentMethods();
+        methods = methods.filter(m => m.id !== id);
+        localStorage.setItem(this.KEYS.PAYMENT_METHODS, JSON.stringify(methods));
+    },
+
     // Goals
     getGoals() {
         return JSON.parse(localStorage.getItem(this.KEYS.GOALS));
@@ -118,6 +155,15 @@ const Storage = {
 
     saveGoals(goals) {
         localStorage.setItem(this.KEYS.GOALS, JSON.stringify(goals));
+    },
+
+    // Saving Goals
+    getSavingGoals() {
+        return JSON.parse(localStorage.getItem(this.KEYS.SAVING_GOALS));
+    },
+
+    saveSavingGoals(goals) {
+        localStorage.setItem(this.KEYS.SAVING_GOALS, JSON.stringify(goals));
     }
 };
 

@@ -11,7 +11,7 @@ const Components = {
                 </div>
                 <div class="flex-1">
                     <h3 class="font-bold text-sm">${entry.item || entry.category}</h3>
-                    <p class="text-[10px] text-gray-400">${new Date(entry.date).toLocaleDateString('ja-JP')} ・ ${entry.category}</p>
+                    <p class="text-[10px] text-gray-400">${new Date(entry.date).toLocaleDateString('ja-JP')} ・ ${entry.category} ${entry.paymentMethod ? `・ ${entry.paymentMethod}` : ''}</p>
                 </div>
                 <div class="text-right">
                     <p class="font-bold ${isExpense ? 'text-ribbon-pink' : 'text-blue-400'}">
@@ -39,6 +39,11 @@ const Components = {
         return categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
     },
 
+    renderPaymentMethodOptions() {
+        const methods = Storage.getPaymentMethods();
+        return `<option value="">(未選択)</option>` + methods.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
+    },
+
     renderSettingsCategoryList(type = 'expense') {
         const categories = Storage.getCategories().filter(c => c.type === type);
         const defaults = Storage.DEFAULT_CATEGORIES.map(c => c.id);
@@ -50,6 +55,25 @@ const Components = {
                     <span class="text-gray-600">${c.name}</span>
                     ${!isDefault ? `
                         <button class="delete-cat-btn ml-1 text-gray-300 hover:text-red-400 transition-colors" data-id="${c.id}">
+                            <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+    },
+
+    renderSettingsPaymentMethodList() {
+        const methods = Storage.getPaymentMethods();
+        const defaults = Storage.DEFAULT_PAYMENT_METHODS.map(m => m.id);
+
+        return methods.map(m => {
+            const isDefault = defaults.includes(m.id);
+            return `
+                <div class="flex items-center gap-1 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100 group">
+                    <span class="text-gray-600">${m.name}</span>
+                    ${!isDefault ? `
+                        <button class="delete-pay-btn ml-1 text-gray-300 hover:text-red-400 transition-colors" data-id="${m.id}">
                             <i data-lucide="x" class="w-3 h-3"></i>
                         </button>
                     ` : ''}

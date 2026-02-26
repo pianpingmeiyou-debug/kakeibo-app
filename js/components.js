@@ -17,9 +17,11 @@ const Components = {
                     <p class="font-bold ${isExpense ? 'text-ribbon-pink' : 'text-blue-400'}">
                         ${isExpense ? '-' : '+'}${Number(entry.amount).toLocaleString()}円
                     </p>
-                    <div class="flex justify-end gap-0.5 mt-1">
-                        ${this.renderStars(entry.necessity)}
-                    </div>
+                    ${isExpense ? `
+                        <div class="flex justify-end gap-0.5 mt-1">
+                            ${this.renderStars(entry.necessity)}
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;

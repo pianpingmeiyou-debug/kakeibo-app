@@ -103,6 +103,13 @@ const Storage = {
         return entry;
     },
 
+    updateEntry(updatedEntry) {
+        let entries = this.getEntries();
+        entries = entries.map(e => e.id === updatedEntry.id ? updatedEntry : e);
+        localStorage.setItem(this.KEYS.ENTRIES, JSON.stringify(entries));
+        return updatedEntry;
+    },
+
     getEntries() {
         return JSON.parse(localStorage.getItem(this.KEYS.ENTRIES) || '[]');
     },

@@ -5,12 +5,13 @@ const Components = {
         const isExpense = entry.type === 'expense';
 
         return `
-            <div class="bg-white p-4 rounded-2xl shadow-soft flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300" data-id="${entry.id}">
+            <div class="bg-white p-4 rounded-2xl shadow-soft flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 relative" data-id="${entry.id}">
+                <button class="edit-entry-btn absolute top-3 right-3 text-[10px] bg-gray-50 px-2 py-1 rounded-lg text-gray-400 font-bold hover:bg-gray-100 transition-colors" data-id="${entry.id}">再編集</button>
                 <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: ${category.color}33">
                     <i data-lucide="${category.icon || 'tag'}" style="color: ${category.color}"></i>
                 </div>
                 <div class="flex-1">
-                    <h3 class="font-bold text-sm">${entry.item || entry.category}</h3>
+                    <h3 class="font-bold text-sm text-trailing-edit-container pr-12">${entry.item || entry.category}</h3>
                     <p class="text-[10px] text-gray-400">${new Date(entry.date).toLocaleDateString('ja-JP')} ・ ${entry.category} ${entry.paymentMethod ? `・ ${entry.paymentMethod}` : ''}</p>
                 </div>
                 <div class="text-right">

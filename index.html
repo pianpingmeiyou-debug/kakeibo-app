@@ -228,6 +228,8 @@
                 <div class="flex gap-4">
                     <button id="cancel-btn"
                         class="flex-1 py-4 bg-gray-100 rounded-2xl font-bold hover:bg-gray-200 transition-colors">やめる</button>
+                    <button id="delete-btn"
+                        class="flex-1 py-4 bg-red-100 text-red-500 rounded-2xl font-bold hover:bg-red-200 transition-colors hidden">削除</button>
                     <button id="save-btn"
                         class="flex-1 py-4 bg-ribbon-pink text-white rounded-2xl font-bold shadow-lg hover:bg-opacity-90 transition-all">保存する</button>
                 </div>
@@ -365,16 +367,16 @@
 
             <!-- Goal Setting -->
             <div class="bg-white p-6 rounded-3xl shadow-soft space-y-4">
-                <h3 class="font-bold">目標設定</h3>
+                <h3 class="font-bold">今月の目標設定</h3>
                 <div class="space-y-3">
                     <div>
-                        <label class="text-xs text-gray-400">収入目標</label>
+                        <label class="text-xs text-gray-400">今月の収入目標</label>
                         <input type="number" id="goal-income" placeholder="200000" step="1000"
                             class="w-full bg-gray-50 border-none rounded-xl p-3 focus:ring-1 focus:ring-ribbon-pink">
                     </div>
                     <div class="flex gap-2">
                         <div class="flex-1">
-                            <label class="text-xs text-gray-400">支出目標</label>
+                            <label class="text-xs text-gray-400">今月の支出目標</label>
                             <input type="number" id="goal-expense-max" placeholder="150000" step="1000"
                                 class="w-full bg-gray-50 border-none rounded-xl p-3 focus:ring-1 focus:ring-ribbon-pink">
                         </div>

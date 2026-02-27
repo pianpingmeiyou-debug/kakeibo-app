@@ -2,6 +2,8 @@ const App = {
     currentView: 'dashboard',
     currentDate: new Date(),
     selectedStars: 0,
+    editingId: null,
+    showAllRecent: false,
     chart: null,
     COLOR_PALETTE: [
         '#FFB7C5', '#B5EAD7', '#FDFD96', '#E0BBE4', '#FFD1DC', '#D4F1F4',
@@ -25,8 +27,15 @@ const App = {
         });
 
         // Add Entry
-        document.getElementById('add-entry-btn').addEventListener('click', () => this.switchView('add'));
+        document.getElementById('add-entry-btn').addEventListener('click', () => {
+            this.editingId = null;
+            this.switchView('add');
+        });
         document.getElementById('cancel-btn').addEventListener('click', () => this.switchView('dashboard'));
+        document.getElementById('view-all-btn').addEventListener('click', () => {
+            this.showAllRecent = !this.showAllRecent;
+            this.renderDashboard();
+        });
 
         // Type toggle (Income/Expense)
         document.querySelectorAll('.type-toggle-btn').forEach(btn => {
@@ -110,6 +119,15 @@ const App = {
                 this.handleDeletePaymentMethod(deletePayBtn.dataset.id);
             }
         });
+
+        // Record Edit & Delete
+        document.getElementById('recent-list').addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-entry-btn');
+            if (editBtn) {
+                this.handleEdit(editBtn.dataset.id);
+            }
+        });
+        document.getElementById('delete-btn').addEventListener('click', () => this.handleDeleteEntry());
     },
 
     switchView(viewId) {
@@ -127,6 +145,22 @@ const App = {
                 btn.classList.add('text-gray-400');
             }
         });
+
+        if (viewId === 'add') {
+            const title = document.querySelector('#add-view h2');
+            const deleteBtn = document.getElementById('delete-btn');
+            if (this.editingId) {
+                title.innerText = '記録を修正する ✏️';
+                deleteBtn.classList.remove('hidden');
+            } else {
+                title.innerText = '記録をつける ✏️';
+                deleteBtn.classList.add('hidden');
+            }
+        }
+
+        if (viewId !== 'dashboard') {
+            this.showAllRecent = false;
+        }
 
         this.render();
     },
@@ -172,7 +206,15 @@ const App = {
 
         // Recent List
         const recentList = document.getElementById('recent-list');
-        const recentEntries = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+        const viewAllBtn = document.getElementById('view-all-btn');
+        let recentEntries = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        if (this.showAllRecent) {
+            viewAllBtn.innerText = 'とじる';
+        } else {
+            viewAllBtn.innerText = 'すべて見る';
+            recentEntries = recentEntries.slice(0, 5);
+        }
 
         if (recentEntries.length > 0) {
             recentList.innerHTML = recentEntries.map(e => Components.renderTransaction(e)).join('');
@@ -378,7 +420,14 @@ const App = {
             return;
         }
 
-        Storage.saveEntry({ date, type, category, paymentMethod, amount, item, necessity });
+        const entryData = { date, type, category, paymentMethod, amount, item, necessity };
+
+        if (this.editingId) {
+            entryData.id = this.editingId;
+            Storage.updateEntry(entryData);
+        } else {
+            Storage.saveEntry(entryData);
+        }
 
         // Reset form
         document.getElementById('input-amount').value = '';
@@ -419,6 +468,45 @@ const App = {
         });
 
         this.renderSaving();
+    },
+
+    handleEdit(id) {
+        const entry = Storage.getEntries().find(e => e.id === id);
+        if (!entry) return;
+
+        this.editingId = id;
+        this.switchView('add');
+
+        // Populate form
+        const typeBtn = document.querySelector(`.type-toggle-btn[data-type="${entry.type}"]`);
+        if (typeBtn) typeBtn.click();
+
+        document.getElementById('input-date').value = entry.date;
+        document.getElementById('input-category').value = entry.category;
+        document.getElementById('input-payment').value = entry.paymentMethod || '';
+        document.getElementById('input-amount').value = entry.amount;
+        document.getElementById('input-item').value = entry.item || '';
+
+        const starVal = Math.round(entry.necessity / 20);
+        this.selectedStars = starVal;
+        document.querySelectorAll('.star-btn').forEach((b, i) => {
+            if (i < starVal) {
+                b.classList.remove('text-gray-300');
+                b.classList.add('text-yellow-400');
+            } else {
+                b.classList.remove('text-yellow-400');
+                b.classList.add('text-gray-300');
+            }
+        });
+    },
+
+    handleDeleteEntry() {
+        if (!this.editingId) return;
+        if (confirm('このきろくを消してもいい？ 🕊️')) {
+            Storage.deleteEntry(this.editingId);
+            this.editingId = null;
+            this.switchView('dashboard');
+        }
     },
 
     changeMonth(delta) {
